@@ -70,7 +70,7 @@ bash
   App.js              # Main app component
 
 ## Built With
-- **React -**Frontend library for building the UI.
+- **React -** Frontend library for building the UI.
 - **FFmpeg -** Used for handling audio file conversion (WebM to WAV).
 - **Axios -** For making HTTP requests to the backend API.
 - **Font Awesome -** For icons used in the UI.
