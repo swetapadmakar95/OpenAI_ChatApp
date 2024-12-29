@@ -1,9 +1,11 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const bodyParser = require ('body-parser');
 const app = express();
 const port = 5000;
+const MyAPIKey = process.env.MyAPI_Key;
 app.use(cors({
     origin: '*', // Update this for production with specific domains
     methods: ['GET', 'POST'],
@@ -18,7 +20,7 @@ app.use((err, req, res, next) => {
 app.use(bodyParser.json({ limit: '50mb' })); // Increase to 50MB
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
-const Base_url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDb2bQrx4BNd4evhMw6d3nZXbS3yDX0_5A'
+const Base_url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${MyAPIKey}`
 const audiourl = ''
 app.post('/', async (req, res) => {
     try {
@@ -77,66 +79,7 @@ app.post('/', async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
-  
-  
-  
-// app.post('/', async (req, res) => {
-//     const { type, content } = req.body; // `type` can be "text" or "audio", `content` holds the data
-  
-//     try {
-//       if (type === 'text') {
-//         // Handle Text Upload
-//         const response = await axios.post(
-//           'https://www.googleapis.com/upload/v1beta/files?key=YOUR_API_KEY',
-//           {
-//             file: { display_name: 'TextFile', content: content },
-//           },
-//           {
-//             headers: {
-//               'Content-Type': 'application/json',
-//             },
-//           }
-//         );
-//         res.json({ fileUri: response.data.uri });
-//       } else if (type === 'audio') {
-//         // Handle Audio Upload
-//         const audioBlob = Buffer.from(content, 'base64'); // Decode base64 audio blob
-  
-//         // Step 1: Start Upload Request
-//         const startResponse = await axios.post(
-//           'https://www.googleapis.com/upload/v1beta/files?key=YOUR_API_KEY',
-//           {
-//             file: { display_name: 'AudioFile' },
-//           },
-//           {
-//             headers: {
-//               'X-Goog-Upload-Protocol': 'resumable',
-//               'X-Goog-Upload-Command': 'start',
-//               'X-Goog-Upload-Header-Content-Length': audioBlob.length,
-//               'X-Goog-Upload-Header-Content-Type': 'audio/wav',
-//               'Content-Type': 'application/json',
-//             },
-//           }
-//         );
-  
-//         const uploadUrl = startResponse.headers['x-goog-upload-url'];
-  
-//         // Step 2: Upload File Data
-//         const uploadResponse = await axios.put(uploadUrl, audioBlob, {
-//           headers: {
-//             'Content-Type': 'audio/wav',
-//           },
-//         });
-  
-//         res.json({ fileUri: uploadResponse.data.file.uri });
-//       } else {
-//         res.status(400).json({ error: 'Invalid type. Must be "text" or "audio".' });
-//       }
-//     } catch (error) {
-//       console.error('Error uploading file:', error.response?.data || error.message);
-//       res.status(500).json({ error: 'Failed to upload file' });
-//     }
-//   });
+
   
 
 app.listen(port, ()=>{
