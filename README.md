@@ -70,10 +70,10 @@ bash
   App.js              # Main app component
 
 ## Built With
-**React -**Frontend library for building the UI.
-**FFmpeg -** Used for handling audio file conversion (WebM to WAV).
-**Axios -** For making HTTP requests to the backend API.
-**Font Awesome -** For icons used in the UI.
+- **React -**Frontend library for building the UI.
+- **FFmpeg -** Used for handling audio file conversion (WebM to WAV).
+- **Axios -** For making HTTP requests to the backend API.
+- **Font Awesome -** For icons used in the UI.
 
 ## Backend
 This app interacts with a backend API to generate AI responses. The backend can be set up using any server-side framework (e.g., Express.js). You can implement the backend yourself or integrate with an existing service like OpenAI's GPT models.
