@@ -1,4 +1,4 @@
-/* Auth Modal Styles */
+/* Auth Modal Styles
 .auth-modal-overlay {
   position: fixed;
   top: 0;
@@ -198,7 +198,6 @@
   color: #5a6fd8;
 }
 
-/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -219,7 +218,6 @@
   }
 }
 
-/* Responsive */
 @media (max-width: 480px) {
   .auth-modal {
     width: 95%;
@@ -248,7 +246,7 @@
     max-width: 100%;
   }
 }
-/* Smooth fade-in and form spacing */
+
 .fade-in {
   animation: fadeIn 0.35s ease;
 }
@@ -261,16 +259,13 @@
   position: relative;
 }
 
-/* Input and error transition */
 .input-wrapper input {
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Reserve consistent space for error message */
-
 .error-message {
   position: absolute;
-  bottom: 70px; /* just above Create button */
+  bottom: 70px; 
   left: 50%;
   transform: translateX(-50%);
   background: #ffecec;
@@ -286,7 +281,6 @@
   animation: fadeError 0.3s ease;
 }
 
-/* Hide empty message smoothly */
 .error-message:empty {
   opacity: 0;
   visibility: hidden;
@@ -303,7 +297,6 @@
   }
 }
 
-/* Loading button state */
 .auth-submit-btn.loading {
   background: linear-gradient(135deg, #6b73ff, #000dff);
   color: #fff;
@@ -319,4 +312,296 @@
 .auth-switch p.errorinfo {
     margin-right: 10px;
     color: #c33;
+}
+
+ */
+
+
+
+ /* ===== Overlay ===== */
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease;
+}
+
+/* ===== Modal Box ===== */
+.auth-modal {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 430px;
+  padding: 25px 25px 30px;
+  animation: slideUp 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ===== Header ===== */
+.auth-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.auth-modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #888;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: 0.3s ease;
+}
+
+.close-btn:hover {
+  background: #f5f5f5;
+  color: #333;
+}
+
+/* ===== Form ===== */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.input-group {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 350px;
+}
+
+.input-icon {
+  position: absolute;
+  left: 15px;
+  color: #999;
+  font-size: 16px;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 14px 45px 14px 45px;
+  border: 2px solid #e1e5e9;
+  border-radius: 12px;
+  font-size: 15px;
+  background: #fafbfc;
+  transition: all 0.3s ease;
+}
+
+.input-wrapper input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+/* ===== Password Toggle ===== */
+.password-toggle {
+  position: absolute;
+  right: 15px;
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: 0.3s ease;
+}
+
+.password-toggle:hover {
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+}
+
+/* ===== Error Message ===== */
+.auth-switch p.errorinfo {
+  color: #c33;
+  font-size: 14px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* ===== Button ===== */
+.auth-submit-btn {
+  width: 100%;
+  max-width: 350px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 5px;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ===== Loading Spinner ===== */
+.auth-submit-btn.loading {
+  background: linear-gradient(135deg, #6b73ff, #000dff);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* ===== Bottom Switch Text ===== */
+.auth-switch {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 14px;
+  color: #555;
+}
+
+.switch-btn {
+  background: none;
+  border: none;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 5px;
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.switch-btn:hover {
+  color: #5a6fd8;
+}
+
+/* ===== Animations ===== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Tablets */
+@media (max-width: 768px) {
+  .auth-modal {
+    width: 95%;
+    padding: 20px 20px 25px;
+    max-width: 400px;
+  }
+
+  .auth-modal-header h2 {
+    font-size: 22px;
+  }
+
+  .input-wrapper input {
+    font-size: 15px;
+    padding: 13px 40px 13px 45px;
+  }
+
+  .auth-submit-btn {
+    font-size: 15px;
+    padding: 12px;
+  }
+}
+
+/* Mobiles */
+@media (max-width: 480px) {
+  .auth-modal-overlay {
+    align-items: flex-end;
+  }
+
+  .auth-modal {
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 18px 25px;
+    max-width: none;
+    box-shadow: 0 -6px 25px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.4s ease;
+  }
+
+  .auth-modal-header {
+    margin-bottom: 10px;
+  }
+
+  .auth-modal-header h2 {
+    font-size: 20px;
+  }
+
+  .input-wrapper {
+    max-width: 100%;
+  }
+
+  .auth-submit-btn {
+    max-width: 100%;
+    padding: 12px;
+  }
+
+  .auth-switch {
+    font-size: 13px;
+  }
+
+  .auth-switch p.errorinfo {
+    font-size: 13px;
+  }
+
+  .input-wrapper input {
+    font-size: 14px;
+  }
+}
+
+/* Very Small Devices */
+@media (max-width: 360px) {
+  .auth-modal {
+    padding: 15px;
+  }
+  .auth-modal-header h2 {
+    font-size: 18px;
+  }
+  .auth-submit-btn {
+    font-size: 14px;
+  }
 }
