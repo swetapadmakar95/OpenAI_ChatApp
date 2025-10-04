@@ -1,19 +1,47 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import axios from 'axios';
-import { useTheme } from './ThemeContext';
-import { useAuth } from './AuthContext';
-import './App.css';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import axios from "axios";
+import { useTheme } from "./ThemeContext";
+import { useAuth } from "./AuthContext";
+import "./App.css";
+import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL } from "@ffmpeg/util";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMoon, faPaperPlane, faMicrophone, faStop, faBars, faPlus, faEllipsisV, faTimes, faMessage, faTrash, faEdit, faUser, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
-import RenameModal from './RenameModal';
-import AuthModal from './AuthModal';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faMoon,
+  faPaperPlane,
+  faMicrophone,
+  faStop,
+  faBars,
+  faPlus,
+  faEllipsisV,
+  faTimes,
+  faMessage,
+  faTrash,
+  faEdit,
+  faUser,
+  faSignOutAlt,
+} from "@fortawesome/free-solid-svg-icons";
+import RenameModal from "./RenameModal";
+import AuthModal from "./AuthModal";
 
-let tempchatmsg = []
+const debounce = (func, delay) => {
+  let timeout;
+  return function executed(...args) {
+    const context = this;
+    const later = () => {
+      clearTimeout(timeout);
+      func.apply(context, args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, delay);
+  };
+};
+
+let tempchatmsg = [];
+let isdelete = false;
 const App = () => {
   const ffmpeg = new FFmpeg();
-  const [userMessage, setUserMessage] = useState('');
+  const [userMessage, setUserMessage] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -27,7 +55,7 @@ const App = () => {
   const [showPopover, setShowPopover] = useState(false);
   const [popoverChartName, setPopoverchartNmae] = useState(null);
   const [modalShow, setModalShow] = React.useState(false);
-  const [shortChatName, setshortChatName] = useState('');
+  const [shortChatName, setshortChatName] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -35,6 +63,7 @@ const App = () => {
   const intervalRef = useRef(null);
   const waveSurferInstance = useRef(null);
   const audioUrlsRef = useRef(new Set());
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -42,7 +71,7 @@ const App = () => {
         .getUserMedia({ audio: true })
         .then((stream) => {
           const recorder = new MediaRecorder(stream);
-          
+
           // Set up the data available handler
           recorder.ondataavailable = async (event) => {
             if (event.data.size > 0) {
@@ -53,61 +82,149 @@ const App = () => {
                 // Try to convert WebM to WAV using FFmpeg
                 if (!ffmpeg.loaded) {
                   await ffmpeg.load({
-                    coreURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.js`, "text/javascript"),
-                    wasmURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.wasm`, "application/wasm"),
-                    workerURL: await toBlobURL(`https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.worker.js`, "text/javascript"),
+                    coreURL: await toBlobURL(
+                      `https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.js`,
+                      "text/javascript"
+                    ),
+                    wasmURL: await toBlobURL(
+                      `https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.wasm`,
+                      "application/wasm"
+                    ),
+                    workerURL: await toBlobURL(
+                      `https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm/ffmpeg-core.worker.js`,
+                      "text/javascript"
+                    ),
                   });
                 }
 
                 const webmArrayBuffer = await blob.arrayBuffer();
-                await ffmpeg.FS('writeFile', 'input.webm', new Uint8Array(webmArrayBuffer));
+                await ffmpeg.FS(
+                  "writeFile",
+                  "input.webm",
+                  new Uint8Array(webmArrayBuffer)
+                );
 
-                await ffmpeg.run('-i', 'input.webm', 'output.wav');
+                await ffmpeg.run("-i", "input.webm", "output.wav");
 
-                const wavData = ffmpeg.FS('readFile', 'output.wav');
-                const wavBlob = new Blob([wavData.buffer], { type: 'audio/wav' });
+                const wavData = ffmpeg.FS("readFile", "output.wav");
+                const wavBlob = new Blob([wavData.buffer], {
+                  type: "audio/wav",
+                });
                 const audioUrl = URL.createObjectURL(wavBlob);
-                
+
                 // Track the URL for cleanup
                 audioUrlsRef.current.add(audioUrl);
 
                 setChatMessages((prevMessages) => [
                   ...prevMessages,
-                  { role: 'user', message: '', audio: audioUrl },
+                  { role: "user", message: "", audio: audioUrl },
                 ]);
 
-                sendMessage('', wavBlob);
+                sendMessage("", wavBlob);
               } catch (error) {
-                console.error('Error processing audio with FFmpeg:', error);
+                console.error("Error processing audio with FFmpeg:", error);
                 // Fallback: use the original blob without conversion
-                console.log('Using fallback: original audio blob');
+                console.log("Using fallback: original audio blob");
                 const audioUrl = URL.createObjectURL(blob);
-                
+
                 // Track the URL for cleanup
                 audioUrlsRef.current.add(audioUrl);
-                
+
                 setChatMessages((prevMessages) => [
                   ...prevMessages,
-                  { role: 'user', message: '', audio: audioUrl },
+                  { role: "user", message: "", audio: audioUrl },
                 ]);
-                sendMessage('', blob);
+                sendMessage("", blob);
               }
             }
           };
-          
+
           setMediaRecorder(recorder);
         })
-        .catch((error) => console.error('Error accessing microphone:', error));
+        .catch((error) => console.error("Error accessing microphone:", error));
     } else {
-      console.error('Browser does not support audio recording.');
+      console.error("Browser does not support audio recording.");
     }
   }, []);
+
+  const autosaveChat = useCallback(
+    async (chatId, messages, name, currentUser) => {
+      if (
+        messages.length === 0 ||
+        !name ||
+        !currentUser ||
+        isInitialLoadRef.current
+      ) {
+        return;
+      }
+      const chatToSave = {
+        id: chatId?.toString() || Date.now().toString(),
+        name: name,
+        messages: messages,
+        timestamp: new Date().toISOString(),
+      };
+
+      try {
+        if (chatId && chatHistory.some(c => c.id === chatId)) {
+          await axios.put(`http://localhost:5000/api/chats/${chatId}`,
+            {
+              chat: chatToSave,
+            },
+            {
+              headers: { Authorization: `Bearer ${currentUser.token}` },
+            }
+          );
+          console.log(`Autosaved existing chat: ${chatId}`);
+        } else {
+          const response = await axios.post("http://localhost:5000/api/chats",
+            {
+              chat: chatToSave,
+            },
+            {
+              headers: { Authorization: `Bearer ${currentUser.token}` },
+            }
+          );
+          setCurrentChatId(response.data.id);
+          console.log(`Autosaved new chat: ${response.data.id}`);
+        }
+        setChatHistory((prev) => {
+          const existingIndex = prev.findIndex(
+            (chat) => chat.id === chatToSave.id
+          );
+          if (existingIndex >= 0) {
+            const updated = [...prev];
+            updated[existingIndex] = chatToSave;
+            return updated;
+          } else {
+            return !isdelete ? [chatToSave, ...prev]: prev;
+          }
+        });
+      } catch (error) {
+        console.error("Error during autosave:", error);
+      }
+    },
+    []
+  );
+
+  const debouncedAutosave = useCallback(
+    debounce((...args) => autosaveChat(...args), 2000),
+    [autosaveChat]
+  ); // 2-second debounce
+  useEffect(() => {
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false; 
+      return;
+    }
+    if (user && chatMessages.length > 0 && shortChatName) {     
+      debouncedAutosave(currentChatId, chatMessages, shortChatName, user);
+    }
+  }, [chatMessages, shortChatName, user, currentChatId, debouncedAutosave]);
 
   // Cleanup effect for blob URLs
   useEffect(() => {
     return () => {
       // Clean up all blob URLs when component unmounts
-      audioUrlsRef.current.forEach(url => {
+      audioUrlsRef.current.forEach((url) => {
         URL.revokeObjectURL(url);
       });
     };
@@ -118,12 +235,12 @@ const App = () => {
     const loadUserChats = async () => {
       if (user && user.token) {
         try {
-          const response = await axios.get('http://localhost:5000/api/chats', {
-            headers: { Authorization: `Bearer ${user.token}` }
+          const response = await axios.get("http://localhost:5000/api/chats", {
+            headers: { Authorization: `Bearer ${user.token}` },
           });
           setChatHistory(response.data);
         } catch (error) {
-          console.error('Error loading chat history:', error);
+          console.error("Error loading chat history:", error);
         }
       } else {
         setChatHistory([]);
@@ -135,7 +252,7 @@ const App = () => {
 
   const startRecording = () => {
     if (mediaRecorder) {
-      if (mediaRecorder.state === 'recording') {
+      if (mediaRecorder.state === "recording") {
         mediaRecorder.stop();
       }
 
@@ -163,7 +280,7 @@ const App = () => {
     }
   };
 
-  const sendMessage = async (message = '', audio = null) => {
+  const sendMessage = async (message = "", audio = null) => {
     if (!message?.trim() && !audio) return;
 
     let audioUrl = null;
@@ -174,15 +291,15 @@ const App = () => {
 
     setChatMessages((prevMessages) => [
       ...prevMessages,
-      { role: 'user', message, audio: audioUrl },
+      { role: "user", message, audio: audioUrl },
     ]);
-    setUserMessage('');
+    setUserMessage("");
     setLoading(true);
 
     try {
       await generateContent(message || audio);
     } catch (error) {
-      console.error('Error during message send:', error);
+      console.error("Error during message send:", error);
     }
 
     setLoading(false);
@@ -190,35 +307,38 @@ const App = () => {
 
   const generateContent = async (message) => {
     try {
-      const response = await axios.post('http://localhost:5000/', {
-        type: 'text',
+      const response = await axios.post("http://localhost:5000/", {
+        type: "text",
         content: message,
       });
 
       setChatMessages((prevMessages) => [
         ...prevMessages,
-        { role: 'bot', message: response.data },
+        { role: "bot", message: response.data },
       ]);
-    } catch (error)      {
-      console.error('Error generating content:', error);
+    } catch (error) {
+      console.error("Error generating content:", error);
     }
   };
 
   const handleInputChange = (e) => {
     setUserMessage(e.target.value);
-    if(chatMessages?.length === 0 && e.target.value.trim()){
-      setshortChatName(e.target.value.substring(0, 30) + (e.target.value.length > 30 ? '...' : ''));
+    if (chatMessages?.length === 0 && e.target.value.trim()) {
+      setshortChatName(
+        e.target.value.substring(0, 30) +
+          (e.target.value.length > 30 ? "..." : "")
+      );
     }
   };
 
   const handleEditMessage = (index) => {
-    setShowPopover(false); 
-    setModalShow(true)
+    setShowPopover(false);
+    setModalShow(true);
   };
 
   const handleDeleteMessage = (index) => {
-    setshortChatName('')
-    setShowPopover(false); 
+    setshortChatName("");
+    setShowPopover(false);
   };
 
   const togglemenu = () => {
@@ -232,29 +352,37 @@ const App = () => {
         id: currentChatId || Date.now(),
         name: shortChatName,
         messages: [...chatMessages],
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
+
       try {
         if (currentChatId) {
           // Update existing chat
-          await axios.put(`http://localhost:5000/api/chats/${currentChatId}`, {
-            chat: newChatItem
-          }, {
-            headers: { Authorization: `Bearer ${user.token}` }
-          });
+          await axios.put(`http://localhost:5000/api/chats/${currentChatId}`,
+            {
+              chat: newChatItem,
+            },
+            {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }
+          );
         } else {
           // Create new chat
-          await axios.post('http://localhost:5000/api/chats', {
-            chat: newChatItem
-          }, {
-            headers: { Authorization: `Bearer ${user.token}` }
-          });
+          await axios.post("http://localhost:5000/api/chats",
+            {
+              chat: newChatItem,
+            },
+            {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }
+          );
         }
-        
+
         // Update local state
-        setChatHistory(prev => {
-          const existingIndex = prev.findIndex(chat => chat.id === currentChatId);
+        setChatHistory((prev) => {
+          const existingIndex = prev.findIndex(
+            (chat) => chat.id === currentChatId
+          );
           if (existingIndex >= 0) {
             const updated = [...prev];
             updated[existingIndex] = newChatItem;
@@ -264,19 +392,19 @@ const App = () => {
           }
         });
       } catch (error) {
-        console.error('Error saving chat:', error);
+        console.error("Error saving chat:", error);
       }
     }
-    
+
     // Start new chat
     setChatMessages([]);
-    setUserMessage('');
-    setshortChatName('');
+    setUserMessage("");
+    setshortChatName("");
     setCurrentChatId(Date.now());
   };
 
   const loadChat = (chatId) => {
-    const chat = chatHistory.find(c => c.id === chatId);
+    const chat = chatHistory.find((c) => c.id === chatId);
     if (chat) {
       setChatMessages(chat.messages);
       setshortChatName(chat.name);
@@ -284,18 +412,18 @@ const App = () => {
     }
   };
 
-  const deleteChat = async (chatId) => {
+  const deleteChat = async (chatId) => {    
     if (user && user.token) {
       try {
         await axios.delete(`http://localhost:5000/api/chats/${chatId}`, {
-          headers: { Authorization: `Bearer ${user.token}` }
+          headers: { Authorization: `Bearer ${user.token}` },
         });
       } catch (error) {
-        console.error('Error deleting chat:', error);
+        console.error("Error deleting chat:", error);
       }
     }
-    
-    setChatHistory(prev => prev.filter(chat => chat.id !== chatId));
+    isdelete = true;
+    setChatHistory((prev) => prev.filter((chat) => chat.id !== chatId));
     if (currentChatId === chatId) {
       newChat();
     }
@@ -303,8 +431,8 @@ const App = () => {
   };
 
   const renameChat = (chatId, newName) => {
-    setChatHistory(prev => 
-      prev.map(chat => 
+    setChatHistory((prev) =>
+      prev.map((chat) =>
         chat.id === chatId ? { ...chat, name: newName } : chat
       )
     );
@@ -320,63 +448,67 @@ const App = () => {
     e.stopPropagation(); // Prevent triggering popover on other elements
   };
 
-  const renameCallback = useCallback((type, value='')=>{
-    if(type === 'save'){
-      if (currentChatId) {
-        renameChat(currentChatId, value);
+  const renameCallback = useCallback(
+    (type, value = "") => {
+      if (type === "save") {
+        if (currentChatId) {
+          renameChat(currentChatId, value);
+        } else {
+          setshortChatName(value);
+          setModalShow(false);
+        }
       } else {
-        setshortChatName(value);
         setModalShow(false);
       }
-    }
-    else{
-      setModalShow(false)
-    }
-  },[currentChatId])
+    },
+    [currentChatId]
+  );
 
   return (
     <>
       <div className="chat-container">
         {/* Mobile Overlay */}
         {!sidebarCollapsed && (
-          <div 
+          <div
             className="mobile-overlay"
             onClick={() => setSidebarCollapsed(true)}
           />
         )}
 
         {/* Enhanced Sidebar */}
-        <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className={`sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
           <div className="sidebar-header">
             <div className="sidebar-title">
-              <FontAwesomeIcon icon={faMessage} className="title-icon" />
+              {/* <FontAwesomeIcon icon={faMessage} className="title-icon" /> */}
               {!sidebarCollapsed && <span>Chat History</span>}
             </div>
-            <button 
-              className="sidebar-toggle" 
+            <button
+              className="sidebar-toggle"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             >
               <FontAwesomeIcon icon={sidebarCollapsed ? faBars : faTimes} />
             </button>
           </div>
-          
+
           {!sidebarCollapsed && (
             <div className="sidebar-content">
               <button className="new-chat-btn" onClick={newChat}>
                 <FontAwesomeIcon icon={faPlus} />
                 <span>New Chat</span>
               </button>
-              
+
               <div className="chat-history-list">
                 {chatHistory.map((chat) => (
-                  <div 
-                    key={chat.id} 
-                    className={`chat-history-item ${currentChatId === chat.id ? 'active' : ''}`}
+                  <div
+                    key={chat.timestamp}
+                    className={`chat-history-item ${
+                      currentChatId === chat.id ? "active" : ""
+                    }`}
                     onClick={() => loadChat(chat.id)}
                   >
                     <div className="chat-item-content">
                       <div className="chat-item-name">
-                        {chat.name || 'Untitled Chat'}
+                        {chat.name || "Untitled Chat"}
                       </div>
                       <div className="chat-item-time">
                         {new Date(chat.timestamp).toLocaleDateString()}
@@ -393,13 +525,15 @@ const App = () => {
                       >
                         <FontAwesomeIcon icon={faEllipsisV} />
                       </button>
-                      
-                      {(showPopover && popoverChartName === chat.id) && (
+
+                      {showPopover && popoverChartName === chat.id && (
                         <div className="chat-popover">
-                          <button onClick={() => {
-                            setModalShow(true);
-                            setShowPopover(false);
-                          }}>
+                          <button
+                            onClick={() => {
+                              setModalShow(true);
+                              setShowPopover(false);
+                            }}
+                          >
                             <FontAwesomeIcon icon={faEdit} />
                             Rename
                           </button>
@@ -412,13 +546,13 @@ const App = () => {
                     </div>
                   </div>
                 ))}
-                
+
                 {/* Current chat if it has messages but isn't saved yet */}
                 {chatMessages.length > 0 && !currentChatId && (
                   <div className="chat-history-item current-unsaved">
                     <div className="chat-item-content">
                       <div className="chat-item-name">
-                        {shortChatName || 'New Chat'}
+                        {shortChatName || "New Chat"}
                       </div>
                       <div className="chat-item-time">Now</div>
                     </div>
@@ -427,19 +561,21 @@ const App = () => {
                         className="chat-action-btn"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setPopoverchartNmae('current');
+                          setPopoverchartNmae("current");
                           setShowPopover(!showPopover);
                         }}
                       >
                         <FontAwesomeIcon icon={faEllipsisV} />
                       </button>
-                      
-                      {(showPopover && popoverChartName === 'current') && (
+
+                      {showPopover && popoverChartName === "current" && (
                         <div className="chat-popover">
-                          <button onClick={() => {
-                            setModalShow(true);
-                            setShowPopover(false);
-                          }}>
+                          <button
+                            onClick={() => {
+                              setModalShow(true);
+                              setShowPopover(false);
+                            }}
+                          >
                             <FontAwesomeIcon icon={faEdit} />
                             Rename
                           </button>
@@ -454,10 +590,13 @@ const App = () => {
         </div>
 
         {/* Enhanced Chat App */}
-        <div className="chat-app" style={{ backgroundColor: theme.background, color: theme.color }}>
+        <div
+          className="chat-app"
+          style={{ backgroundColor: theme.background, color: theme.color }}
+        >
           <div className="chat-header">
             <div className="chat-header-left">
-              <button 
+              <button
                 className="mobile-menu-btn"
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               >
@@ -465,9 +604,7 @@ const App = () => {
               </button>
               <h2 style={{ color: theme.color }}>✨ AI Chat Assistant ✨</h2>
               {shortChatName && (
-                <div className="current-chat-name">
-                  {shortChatName}
-                </div>
+                <div className="current-chat-name">{shortChatName}</div>
               )}
             </div>
             <div className="chat-header-actions">
@@ -477,8 +614,8 @@ const App = () => {
                     <FontAwesomeIcon icon={faUser} />
                   </div>
                   <span className="user-name">{user.name}</span>
-                  <button 
-                    className="logout-btn" 
+                  <button
+                    className="logout-btn"
                     onClick={logout}
                     title="Sign Out"
                   >
@@ -486,16 +623,16 @@ const App = () => {
                   </button>
                 </div>
               ) : (
-                <button 
-                  className="signin-btn" 
+                <button
+                  className="signin-btn"
                   onClick={() => setShowAuthModal(true)}
                 >
                   <FontAwesomeIcon icon={faUser} />
                   Sign In
                 </button>
               )}
-              <button 
-                className="theme-toggle-btn" 
+              <button
+                className="theme-toggle-btn"
                 onClick={toggleTheme}
                 title="Toggle theme"
               >
@@ -503,7 +640,7 @@ const App = () => {
               </button>
             </div>
           </div>
-          
+
           <div className="chat-messages-container">
             {chatMessages.length === 0 ? (
               <div className="welcome-message">
@@ -518,10 +655,14 @@ const App = () => {
                 {chatMessages.map((msg, index) => (
                   <div
                     key={index}
-                    className={`chat-bubble ${msg.role === 'user' ? 'user-bubble' : 'bot-bubble'}`}
+                    className={`chat-bubble ${
+                      msg.role === "user" ? "user-bubble" : "bot-bubble"
+                    }`}
                     style={{
                       backgroundColor:
-                        msg.role === 'user' ? theme.userBubbleColor : theme.botBubbleColor,
+                        msg.role === "user"
+                          ? theme.userBubbleColor
+                          : theme.botBubbleColor,
                     }}
                   >
                     <div className="bubble-content">
@@ -537,7 +678,10 @@ const App = () => {
                       )}
                     </div>
                     <div className="bubble-time">
-                      {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date().toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </div>
                   </div>
                 ))}
@@ -554,7 +698,7 @@ const App = () => {
               </div>
             )}
           </div>
-          
+
           <div className="input-container">
             <div className="message-input-wrapper">
               <div className="message-input">
@@ -563,15 +707,21 @@ const App = () => {
                   value={userMessage}
                   onChange={handleInputChange}
                   placeholder="Type a message..."
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage(userMessage)}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && sendMessage(userMessage)
+                  }
                 />
                 <div className="input-actions">
                   <button
                     className="voice-btn"
                     onClick={isRecording ? stopRecording : startRecording}
-                    title={isRecording ? "Stop recording" : "Start voice recording"}
+                    title={
+                      isRecording ? "Stop recording" : "Start voice recording"
+                    }
                   >
-                    <FontAwesomeIcon icon={isRecording ? faStop : faMicrophone} />
+                    <FontAwesomeIcon
+                      icon={isRecording ? faStop : faMicrophone}
+                    />
                   </button>
                   <button
                     className="send-button"
@@ -601,9 +751,9 @@ const App = () => {
         />
       )}
 
-      <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
       />
     </>
   );

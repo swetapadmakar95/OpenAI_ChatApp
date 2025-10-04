@@ -31,7 +31,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 30px 30px 20px;
+  padding: 20px 30px 20px;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -62,7 +62,7 @@
 }
 
 .auth-modal-body {
-  padding: 30px;
+  padding: 10px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -77,7 +77,7 @@
 }
 
 .input-group {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   display: flex;
   justify-content: center;
 }
@@ -173,7 +173,7 @@
 
 .auth-switch {
   text-align: center;
-  padding-top: 20px;
+  padding-top: 1px;
   border-top: 1px solid #f0f0f0;
 }
 
@@ -247,4 +247,76 @@
   .error-message {
     max-width: 100%;
   }
+}
+/* Smooth fade-in and form spacing */
+.fade-in {
+  animation: fadeIn 0.35s ease;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Input and error transition */
+.input-wrapper input {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Reserve consistent space for error message */
+
+.error-message {
+  position: absolute;
+  bottom: 70px; /* just above Create button */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffecec;
+  color: #b22222;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #f5c2c2;
+  max-width: 350px;
+  width: calc(100% - 40px);
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 2;
+  animation: fadeError 0.3s ease;
+}
+
+/* Hide empty message smoothly */
+.error-message:empty {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@keyframes fadeError {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading button state */
+.auth-submit-btn.loading {
+  background: linear-gradient(135deg, #6b73ff, #000dff);
+  color: #fff;
+  opacity: 0.9;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.auth-submit-btn.loading svg {
+  margin-right: 8px;
+}
+
+.auth-switch p.errorinfo {
+    margin-right: 10px;
+    color: #c33;
 }

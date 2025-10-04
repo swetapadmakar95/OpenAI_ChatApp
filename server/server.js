@@ -15,7 +15,7 @@ const users = [];
 const userChats = new Map(); // userId -> chatHistory
 app.use(cors({
     origin: '*', // Update this for production with specific domains
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }));
 app.use(express.json());
@@ -153,7 +153,7 @@ app.put('/api/chats/:chatId', authenticateToken, (req, res) => {
   const { chatId } = req.params;
   const { chat } = req.body;
   const userId = req.user.userId;
-  
+  console.log('PUT /api/chats', { chatId, userId });
   let chats = userChats.get(userId) || [];
   const index = chats.findIndex(c => c.id === chatId);
   
